@@ -1,0 +1,168 @@
+<!-- CSS only -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+<!-- JavaScript Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+
+<div class="container mt-4" id="submit-div">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <form>
+                <div class="mb-3">
+                  <label for="exampleInputEmail1" class="form-label">Email address</label>
+                  <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+                  <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
+                </div>
+               
+                <div class="mb-3">
+                    <label  class="form-label">Amount:</label>
+                    <input type="text"  class="form-control" id="order-amt" aria-describedby="emailHelp">
+                </div>
+              
+                <button type="button"  id="order-button1" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.getElementById("order-button1").onclick = function(e) {
+        var url = "/api/payment/order"
+        var params = {
+            amount: document.getElementById("order-amt").value * 100,
+            currency: "INR",
+            receipt: "Akash Trading",
+            payment_capture: "1"
+        };
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function(res){
+            if(xmlHttp.readyState === 4){
+                res = JSON.parse(xmlHttp.responseText);
+                document.getElementById("rzp-text").value = res.sub.id
+                console.log("i am here");
+                document.getElementById("checkout-div").style.display = "block"
+                document.getElementById("submit-div").style.display = "none"
+            }
+
+        }
+        xmlHttp.open("POST",url,true);
+        xmlHttp.setRequestHeader("Content-type","application/json");
+        xmlHttp.send(JSON.stringify(params));
+
+    }
+</script>
+<!-- <div>
+    <br>
+    <hr>
+    <label for="">Order id: </label>
+    <input type="text" name=""  id="rzp-text">
+    <br>
+</div> -->
+
+<div class="container mt-5" id="checkout-div" style="display: none;">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="alert alert-info" role="alert">
+                Your Order id is created: 
+                <input type="text" name=""  id="rzp-text">
+                <p>Press Checkout to proceed</p>
+                <button id="rzp-button1" class="btn btn-primary">Checkout</button>
+             </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="container mt-3">
+    <div class="row">
+        <div class="col-md-6">
+            
+        </div>
+    </div>
+</div>
+<div id="paymentDetails"></div>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    document.getElementById("rzp-button1").onclick = function(e){
+        var options = {
+            "key" : "<%= key %>",
+            "currency": "INR",
+            "name": "Akash Stocks Payment",
+            "description": "Akash Transactions",
+            "order_id": document.getElementById("rzp-text").value,
+            "handler":function(response){
+                 document.getElementById("order-pay-id").value = response.razorpay_payment_id;
+                 document.getElementById("order-id").value = response.razorpay_order_id;
+                 document.getElementById("order-sig").value = response.razorpay_signature;
+                 console.log("here to");
+                 document.getElementById("checkout-div").style.display = "none";
+                 document.getElementById("verify-div").style.display = "block";
+            },
+            "theme" : {
+                "color": "#0EB9F2"
+            }
+        };
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
+        console.log("i am here 2")
+        e.preventDefault();
+    } 
+</script>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="check-circle-fill" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+      </symbol>  
+  </svg>
+<div style="display: none;">
+    <label for="">Order id: </label>
+    <input type="text" id="order-id">
+    <label for="">Payment id:</label>
+    <input type="text" id="order-pay-id">
+    <label for="">Order signature :</label>
+    <input type="text" id="order-sig">
+    <br>
+</div>
+<div class="container mt-5" id="verify-div" style="display: none;">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="alert alert-primary d-flex align-items-center" role="alert">
+                <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Success:"><use xlink:href="#check-circle-fill"/></svg>
+                <div>
+                 Please click on verify button to verify payment!!!!!!
+                </div>
+            </div>
+            <button id="verify-button1" class="btn btn-primary">Verify</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById("verify-button1").onclick = function(e){
+        var url = '/api/payment/verify';
+        var params = {
+            razorpay_order_id: document.getElementById("order-id").value,
+            razorpay_payment_id: document.getElementById("order-pay-id").value,
+            razorpay_signature: document.getElementById("order-sig").value
+        };
+        console.log("step-1");
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function(res){
+            if(xmlHttp.readyState === 4){
+                alert(xmlHttp.responseText);
+                if(xmlHttp.responseText.length == 20){
+                    console.log("scueesd");
+                    window.location.href = "http://127.0.0.1:5500/stocks/sucess.html";
+                }
+                // console.log(xmlHttp.responseText);
+                // console.log(xmlHttp.responseText.trim());
+                // console.log(xmlHttp.responseText.includes());
+                // console.log(xmlHttp.responseText.length);
+            }
+        }
+        xmlHttp.open("POST",url,true);
+        console.log("respone here 3")
+        xmlHttp.setRequestHeader("content-type", "application/json");
+        xmlHttp.send(JSON.stringify(params));
+    }
+</script>
